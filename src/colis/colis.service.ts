@@ -1,47 +1,59 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Colis } from './entities/colis.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { CreateColisInput } from './dto/create-colis.input';
+import { UpdateColisInput } from './dto/update-colis.input';
 
 @Injectable()
 export class ColisService {
-  private colis: Colis[] = [
-    {
-      id: '1',
-      destinataire: 'Ali',
-      adresse: 'Tunis',
-      statut: 'En cours de livraison',
-    },
-  ];
+  constructor(
+    @InjectRepository(Colis)
+    private colisRepository: Repository<Colis>,
+  ) {}
 
-  findAll(): Colis[] {
-    return this.colis;
+  async findAll(): Promise<Colis[]> {
+    return this.colisRepository.find();
   }
 
-  findOne(id: string): Colis {
-    const colis = this.colis.find((c) => c.id === id);
+  async findOne(id: string): Promise<Colis> {
+    const colis = await this.colisRepository.findOne({ where: { id } });
     if (!colis) {
-      throw new NotFoundException(`Colis avec l'id ${id} introuvable`);
+      throw new NotFoundException(`Colis with ID ${id} not found`);
     }
     return colis;
   }
 
-  create(destinataire: string, adresse: string): Colis {
-    const newColis = {
-      id: uuidv4(),
-      destinataire,
-      adresse,
-      statut: 'En préparation',
-    };
-    this.colis.push(newColis);
-    return newColis;
+  async create(createColisInput: CreateColisInput): Promise<Colis> {
+    const colis = this.colisRepository.create({
+      ...createColisInput,
+      dateExpedition: new Date(createColisInput.dateExpedition),
+      dateEstimeeLivraison: createColisInput.dateEstimeeLivraison 
+        ? new Date(createColisInput.dateEstimeeLivraison) 
+        : null,
+    });
+    return this.colisRepository.save(colis);
   }
 
-  updateStatut(id: string, statut: string): Colis {
-    const colis = this.colis.find((c) => c.id === id);
-    if (!colis) {
-      throw new NotFoundException(`Impossible de mettre à jour : colis ${id} introuvable`);
+  async update(id: string, updateColisInput: Partial<UpdateColisInput>): Promise<Colis> {
+    const colis = await this.findOne(id);
+    
+    const updateData = { ...updateColisInput };
+    if (updateColisInput.dateExpedition) {
+      updateData.dateExpedition = updateColisInput.dateExpedition;
     }
-    colis.statut = statut;
-    return colis;
+    if (updateColisInput.dateEstimeeLivraison) {
+      updateData.dateEstimeeLivraison = updateColisInput.dateEstimeeLivraison;
+    }
+
+    Object.assign(colis, updateData);
+    return this.colisRepository.save(colis);
+  }
+
+  async remove(id: string): Promise<void> {
+    const result = await this.colisRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Colis with ID ${id} not found`);
+    }
   }
 }
