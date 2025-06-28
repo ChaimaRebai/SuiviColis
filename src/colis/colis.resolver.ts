@@ -1,31 +1,36 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { ColisService } from './colis.service';
-
 import { Colis } from './entities/colis.entity';
-
+import { CreateColisInput } from './dto/create-colis.input';
+import { UpdateColisInput } from './dto/update-colis.input';
 
 @Resolver(() => Colis)
-export class ColisResolver { constructor(private readonly colisService: ColisService) {}
+export class ColisResolver {
+  constructor(private readonly colisService: ColisService) {}
 
   @Query(() => [Colis])
-  getAllColis() {
+  async getAllColis() {
     return this.colisService.findAll();
   }
 
   @Query(() => Colis)
-  getColisById(@Args('id') id: string) {
+  async getColisById(@Args('id') id: string) {
     return this.colisService.findOne(id);
   }
 
   @Mutation(() => Colis)
-  createColis(
-    @Args('destinataire') destinataire: string,
-    @Args('adresse') adresse: string,
-  ) {
-    return this.colisService.create(destinataire, adresse);
+  async createColis(@Args('createColisInput') createColisInput: CreateColisInput) {
+    return this.colisService.create(createColisInput);
   }
 
   @Mutation(() => Colis)
-  updateStatut(@Args('id') id: string, @Args('statut') statut: string) {
-    return this.colisService.updateStatut(id, statut);
-  }}
+  async updateColis(@Args('updateColisInput') updateColisInput: UpdateColisInput) {
+    return this.colisService.update(updateColisInput.id, updateColisInput);
+  }
+
+  @Mutation(() => Boolean)
+  async removeColis(@Args('id') id: string) {
+    await this.colisService.remove(id);
+    return true;
+  }
+}
