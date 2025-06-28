@@ -18,19 +18,4 @@ export class ColisResolver {
     return this.colisService.findOne(id);
   }
 
-  @Mutation(() => Colis)
-  async createColis(@Args('createColisInput') createColisInput: CreateColisInput) {
-    return this.colisService.create(createColisInput);
-  }
-
-  @Mutation(() => Colis)
-  async updateColis(@Args('updateColisInput') updateColisInput: UpdateColisInput) {
-    return this.colisService.update(updateColisInput.id, updateColisInput);
-  }
-
-  @Mutation(() => Boolean)
-  async removeColis(@Args('id') id: string) {
-    await this.colisService.remove(id);
-    return true;
-  }
 }
